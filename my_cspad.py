@@ -42,7 +42,7 @@ numEvents = imgs.shape[0]
 numTrain = 5
 numTest = 100
 
-numIters = 10
+numIters = 100
 nb_classes = 2
 batch_size = 10
 nb_epoch = 2
@@ -150,13 +150,13 @@ for t in range(0,numIters):
 	model.fit(X_train, Y_train, batch_size=batch_size, nb_epoch=nb_epoch,
 	    verbose=1, validation_data=(X_test, Y_test))
 
-	WEIGHTS_FNAME = '/reg/d/psdm/cxi/cxitut13/scratch/liponan/ml/cspad_cnn_weights_v1.hdf'
-	model.save_weights(WEIGHTS_FNAME, overwrite=True)
-	score = model.evaluate(X_test, Y_test, show_accuracy=True, verbose=0)
+	# WEIGHTS_FNAME = '/reg/d/psdm/cxi/cxitut13/scratch/liponan/ml/cspad_cnn_weights_v1.hdf'
+	# model.save_weights(WEIGHTS_FNAME, overwrite=True)
+	# score = model.evaluate(X_test, Y_test, show_accuracy=True, verbose=0)
 
-	print(score)
-	print('Test score:', score[0])
-	print('Test accuracy:', score[1])
+	# print(score)
+	# print('Test score:', score[0])
+	# print('Test accuracy:', score[1])
 
 
 f.close()
