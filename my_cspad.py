@@ -110,13 +110,13 @@ for t in range(0,numEvents):
 	    img_reshape = np.reshape(img, [imgs.shape[1], imgs.shape[2], 1])
 	    X_test[u,:,:,:] = img_reshape  
 
-	#print(X_test.shape)    
+	# print(X_test.shape)    
 
 	y_train = hits[trainList]
-	#print(y_train)
+	# print(y_train)
 	y_train = y_train > 50
 	y_train = 1 * y_train 
-	p#rint(y_train)
+	# print(y_train)
 
 
 	y_test = hits[testList]
