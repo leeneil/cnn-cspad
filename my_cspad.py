@@ -35,6 +35,18 @@ hits = f['/entry_1/result_1/nPeaks'].value
 #plt.imshow(imgs[1500,:,:],interpolation='none',vmax=50,vmin=0)
 #plt.show()
 
+
+# override the real # of events
+numEvents = imgs.shape[0]
+
+numTrain = 10
+numTest = 100
+
+n_iters = 10
+nb_classes = 2
+batch_size = 10
+nb_epoch = 2
+
 print(imgs.shape)
 print(imgs.dtype)
 print(type(imgs))
@@ -65,19 +77,6 @@ model.add(Activation('softmax'))
 model.compile(loss='categorical_crossentropy', optimizer='adadelta', metrics=['accuracy'])
 
 
-
-
-
-# override the real # of events
-numEvents = imgs.shape[0]
-
-numTrain = 10
-numTest = 100
-
-n_iters = 10
-nb_classes = 2
-batch_size = 10
-nb_epoch = 2
 
 X_train = np.empty([numTrain, imgs.shape[1], imgs.shape[2], 1])
 X_test = np.empty([numTest, imgs.shape[1], imgs.shape[2], 1])
