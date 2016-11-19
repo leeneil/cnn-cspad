@@ -39,10 +39,10 @@ hits = f['/entry_1/result_1/nPeaks'].value
 # override the real # of events
 numEvents = imgs.shape[0]
 
-numTrain = 10
+numTrain = 5
 numTest = 100
 
-n_iters = 10
+numIters = 10
 nb_classes = 2
 batch_size = 10
 nb_epoch = 2
@@ -82,7 +82,7 @@ X_train = np.empty([numTrain, imgs.shape[1], imgs.shape[2], 1])
 X_test = np.empty([numTest, imgs.shape[1], imgs.shape[2], 1])
 
 
-for t in range(0,numEvents):
+for t in range(0,numIters):
 
 	randList = np.random.permutation(numEvents)
 	trainList = randList[:numTrain]
