@@ -41,7 +41,7 @@ print(type(imgs))
 
 model = Sequential()
 
-model.add(Convolution2D(32, 3, 3, border_mode='valid', input_shape=(1,1480,1552,1))
+model.add(Convolution2D(32, 3, 3, border_mode='valid', input_shape=(1,1480,1552,1)))
 # The Dropout is not in the original keras example, it's just here to demonstrate how to
 # correctly handle train/predict phase difference when visualizing convolutions below
 model.add(Dropout(0.1))
