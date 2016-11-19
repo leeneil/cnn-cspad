@@ -41,7 +41,7 @@ print(type(imgs))
 
 model = Sequential()
 
-model.add(Convolution2D(32, 3, 3, border_mode='valid', input_shape=imgs.shape[1:]))
+model.add(Convolution2D(32, 3, 3, border_mode='valid', input_shape=(1,1480,1552,1))
 # The Dropout is not in the original keras example, it's just here to demonstrate how to
 # correctly handle train/predict phase difference when visualizing convolutions below
 model.add(Dropout(0.1))
@@ -72,12 +72,12 @@ model.compile(loss='categorical_crossentropy', optimizer='adadelta', metrics=['a
 numEvents = imgs.shape[0]
 
 numTrain = 10
-numTest = 50
+numTest = 100
 
-n_iters = 100
+n_iters = 10
 nb_classes = 2
 batch_size = 10
-nb_epoch = 5
+nb_epoch = 2
 
 X_train = np.empty([numTrain, imgs.shape[1], imgs.shape[2], 1])
 X_test = np.empty([numTest, imgs.shape[1], imgs.shape[2], 1])
@@ -158,7 +158,7 @@ for t in range(0,numEvents):
 	print(score)
 	print('Test score:', score[0])
 	print('Test accuracy:', score[1])
-	
+
 
 f.close()
 
