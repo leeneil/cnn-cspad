@@ -12,11 +12,12 @@ import matplotlib.cm as cm
 import numpy as np
 np.random.seed(1337) # for reproducibility
 
+
 from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation, Flatten
 from keras.layers.convolutional import Convolution2D, MaxPooling2D
 from keras.utils import np_utils
-
+from keras.layers.normalization import BatchNormalization
 import theano
 print(theano.config.device)
 
@@ -24,7 +25,9 @@ import psana
 import h5py
 
 # f = h5py.File('/reg/d/psdm/cxi/cxitut13/res/yoon82/r0010/cxitut13_0010.cxi','r')
-f = h5py.File('/reg/d/psdm/cxi/cxitut13/res/yoon82/cxis0813/cxis0813_0032.cxi','r')
+# f = h5py.File('/reg/d/psdm/cxi/cxitut13/res/yoon82/cxis0813/cxis0813_0032.cxi','r')
+f = h5py.File('/dev/shm/lipon/cxis0813_0032.cxi','r')
+
 imgs = f['/entry_1/data_1/data']
 indices = f['/entry_1/result_1/index'].value
 indices = indices[ indices!=-2 ]
@@ -65,25 +68,39 @@ model.add(Convolution2D(4, 5, 5, border_mode='valid', input_shape=(368,368,1)))
 # The Dropout is not in the original keras example, it's just here to demonstrate how to
 # correctly handle train/predict phase difference when visualizing convolutions below
 # model.add(Dropout(0.1))
+# model.add()
+model.add(BatchNormalization(mode=0))
+
 convout1 = Activation('relu')
 model.add(convout1)
+
 model.add(MaxPooling2D(pool_size=(3, 3)))
 
 model.add(Convolution2D(4, 5, 5))
+
+model.add(BatchNormalization(mode=0))
+
 convout2 = Activation('relu')
 model.add(convout2)
+
 model.add(MaxPooling2D(pool_size=(5, 5)))
 # model.add(Dropout(0.25))
 
 model.add(Flatten())
-model.add(Dense(4))
+model.add(Dense(16))
+
+model.add(BatchNormalization(mode=1))
+
 model.add(Activation('relu'))
 # model.add(Dropout(0.5))
 
 model.add(Dense(nb_classes))
+
+model.add(BatchNormalization(mode=1))
+
 model.add(Activation('relu'))
 
-model.compile(loss='binary_crossentropy', optimizer='adadelta', metrics=['accuracy'])
+model.compile(loss='binary_crossentropy', optimizer='sgd', metrics=['accuracy'])
 
 model.summary()
 
@@ -105,9 +122,9 @@ for t in range(0,numIters):
 	    n = trainList[u]
 	    img = imgs[n,:,:]
 	    
-	    std = np.std(img)
-	    mu = np.mean(img)
-	    img = (img-mu) / std
+	    # std = np.std(img)
+	    # mu = np.mean(img)
+	    # img = (img-mu) / std
 	    img_reshape = np.reshape(img, [imgs.shape[1], imgs.shape[2], 1])
 	    X_train[u,:,:,:] = img_reshape
 
@@ -116,9 +133,9 @@ for t in range(0,numIters):
 	for u in range(0, numTest):
 	    n = testList[u]
 	    img = imgs[n,:,:]
-	    std = np.std(img)
-            mu = np.mean(img)
-            img = (img-mu) / std
+	    # std = np.std(img)
+            # mu = np.mean(img)
+            # img = (img-mu) / std
 	    img_reshape = np.reshape(img, [imgs.shape[1], imgs.shape[2], 1])
 	    X_test[u,:,:,:] = img_reshape  
 
@@ -159,8 +176,10 @@ for t in range(0,numIters):
 
 
 
-	model.fit(X_train, Y_train, batch_size=batch_size, nb_epoch=nb_epoch,
+	output = model.fit(X_train, Y_train, batch_size=batch_size, nb_epoch=nb_epoch,
 	    verbose=1, validation_data=(X_test, Y_test))
+
+	print(output)
 
 	# WEIGHTS_FNAME = '/reg/d/psdm/cxi/cxitut13/scratch/liponan/ml/cspad_cnn_weights_v1.hdf'
 	# model.save_weights(WEIGHTS_FNAME, overwrite=True)
