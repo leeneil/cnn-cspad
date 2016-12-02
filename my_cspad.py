@@ -1,8 +1,12 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-import os
-# os.environ['THEANO_FLAGS']='mode=FAST_RUN,device=gpu,floatX=float32'
+from IPython import embed
+import psana
+import h5py
+import sys, os
+import time
+#os.environ['THEANO_FLAGS']='mode=FAST_RUN,device=gpu,floatX=float32'
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning) 
 
@@ -21,18 +25,79 @@ from keras.layers.normalization import BatchNormalization
 import theano
 print(theano.config.device)
 
-import psana
-import h5py
-
+tic = time.time()
 # f = h5py.File('/reg/d/psdm/cxi/cxitut13/res/yoon82/r0010/cxitut13_0010.cxi','r')
 # f = h5py.File('/reg/d/psdm/cxi/cxitut13/res/yoon82/cxis0813/cxis0813_0032.cxi','r')
-f = h5py.File('/dev/shm/lipon/cxis0813_0032.cxi','r')
+f = h5py.File('/reg/d/psdm/cxi/cxic0415/scratch/yoon82/psocake/r0099/cxic0415_0099.cxi', 'r')
+# f = h5py.File('/dev/shm/lipon/cxis0813_0032.cxi','r')
 
-imgs = f['/entry_1/data_1/data']
-indices = f['/entry_1/result_1/index'].value
-indices = indices[ indices!=-2 ]
+#imgs = f['/entry_1/data_1/data']
+indices = f['/entry_1/result_1/nPeaksAll'].value
+#indices = indices[ indices!=-2 ]
+f.close()
+toc = time.time()
+print("Time to read in hdf5: ",toc-tic)
 
 print(indices)
+
+ds = psana.DataSource('exp=cxic0415:run=99:idx')
+run = ds.runs().next()
+times = run.times()
+numEvents = len(times)
+env = ds.env()
+eventNumber = 615
+evt = run.event(times[eventNumber])
+det = psana.Detector('DscCsPad')
+tic = time.time()
+calib = det.calib(evt) * det.mask(evt, calib=True, status=True,
+                                           edges=True, central=True,
+                                           unbond=True, unbondnbrs=True)
+# background suppression
+from pyimgalgos.MedianFilter import median_filter_ndarr
+calib = det.calib(evt)
+medianFilterRank = 5
+calib -= median_filter_ndarr(calib, medianFilterRank)
+
+# TODO: Perhaps try binarization
+
+img = det.image(evt,calib)[700:1050,700:1050] # crop inside water ring
+imgShape = img.shape
+toc = time.time()
+print("Time for preprocessing per image: ",toc-tic)
+plt.imshow(img)
+plt.show()
+
+# Generate train/test list from quartile
+lowerB = np.percentile(indices,q=25)
+higherB = np.percentile(indices,q=75)
+print("lower,higher bounds: ", lowerB, higherB)
+
+missInd = np.where(indices<=lowerB)[0]
+hitInd = np.where(indices>=higherB)[0]
+print("number of misses, hits: ", len(missInd), len(hitInd))
+
+# Split into training / testing sets
+testSize = 50
+# TODO: add assert 50
+missInd_test = missInd[-testSize:]
+hitInd_test = hitInd[-testSize:]
+missInd_train = missInd[:len(missInd)-testSize]
+hitInd_train = hitInd[:len(hitInd)-testSize]
+
+trainSize = len(missInd_train) + len(hitInd_train)
+testSize = 2 * testSize
+
+trainStack = np.zeros((trainSize,imgShape[0],imgShape[1]))
+testStack = np.zeros((testSize,imgShape[0],imgShape[1]))
+# interleave misses and hits
+
+# Generate trainLabel, testLabel
+
+# Visually check labels are consistent with the images
+
+embed()
+
+sys.exit(1)
 
 # f.close()
 #print(run)
@@ -42,7 +107,7 @@ print(indices)
 # plt.imshow(imgs[1500,:,:],interpolation='none',vmax=100,vmin=0)
 # plt.show()
 
-imgs = imgs[:,0:368,0:368]
+#imgs = imgs[:,0:368,0:368]
 
 
 # override the real # of events
@@ -50,8 +115,8 @@ numEvents = imgs.shape[0]
 
 thr = 0
 
-numTrain = 10
-numTest = 10
+numTrain = 10 # TODO: Set to trainSize
+numTest = 10 # TODO: Set to testSize
 
 numIters = 1
 nb_classes = 2
@@ -77,6 +142,8 @@ model.add(convout1)
 model.add(MaxPooling2D(pool_size=(3, 3)))
 
 model.add(Convolution2D(4, 5, 5))
+
+# TODO: Visualize the convolution layer weights
 
 model.add(BatchNormalization(mode=0))
 
