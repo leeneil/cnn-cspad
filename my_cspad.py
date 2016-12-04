@@ -37,60 +37,7 @@ def prepoces(eventNumber):
     img = det.image(evt, calib)[cropT:cropB, cropL:cropR]  # crop inside water ring
     return img
 
-# Load H5 file
-print("loading H5 file")
 
-tic = time.time()
-# f = h5py.File('/reg/d/psdm/cxi/cxitut13/res/yoon82/r0010/cxitut13_0010.cxi','r')
-# f = h5py.File('/reg/d/psdm/cxi/cxitut13/res/yoon82/cxis0813/cxis0813_0032.cxi','r')
-f = h5py.File('/reg/d/psdm/cxi/cxic0415/scratch/yoon82/psocake/r0099/cxic0415_0099.cxi', 'r')
-# f = h5py.File('/dev/shm/lipon/cxis0813_0032.cxi','r')
-
-#imgs = f['/entry_1/data_1/data']
-numIndex = f['/entry_1/result_1/nPeaksAll'].value
-#numIndex = numIndex[ numIndex!=-2 ]
-f.close()
-toc = time.time()
-print("Time to read in hdf5: ",toc-tic)
-
-print(numIndex)
-
-ds = psana.DataSource('exp=cxic0415:run=99:idx')
-run = ds.runs().next()
-times = run.times()
-numEvents = len(times)
-env = ds.env()
-eventNumber = 0
-evt = run.event(times[eventNumber])
-det = psana.Detector('DscCsPad')
-tic = time.time()
-img = prepoces(eventNumber)
-imgShape = img.shape
-toc = time.time()
-print("Time for preprocessing per image: ",toc-tic)
-#plt.imshow(img)
-#plt.show()
-
-# Generate train/test list from quartile
-lowerB = np.percentile(numIndex,q=25)
-higherB = np.percentile(numIndex,q=75)
-print("lower,higher bounds: ", lowerB, higherB)
-
-missInd = np.where(numIndex<=lowerB)[0]
-hitInd = np.where(numIndex>=higherB)[0]
-print("number of misses, hits: ", len(missInd), len(hitInd))
-
-# Split into training / testing sets
-testSize = 50
-# TODO: add assert 50
-missInd_test = missInd[-testSize:]
-hitInd_test = hitInd[-testSize:]
-missInd_train = missInd[:len(missInd)-testSize]
-hitInd_train = hitInd[:len(hitInd)-testSize]
-
-trainSize = len(missInd_train) + len(hitInd_train)
-testSize = 2 * testSize
-print("Available train and test images: ", trainSize, testSize)
 #trainStack = np.zeros((trainSize,imgShape[0],imgShape[1]))
 #testStack = np.zeros((testSize,imgShape[0],imgShape[1]))
 # interleave misses and hits
@@ -109,6 +56,9 @@ numIters = 1
 nb_classes = 2
 batch_size = 10
 nb_epoch = 1
+
+imgShape = np.array([cropB-cropT, cropR-cropL])
+
 X_train = np.empty((numTrain, 1, imgShape[0], imgShape[1]))
 X_test = np.empty((numTest, 1, imgShape[0], imgShape[1]))
 y_train = np.empty((numTrain,),dtype=int)
@@ -169,6 +119,64 @@ if useFile:
     detname = 'DscCsPad'
     fname = outPath + exp + '_' + str(runNum).zfill(4) + '.h5'
     f = h5py.File(fname, 'r')
+else:
+    # Load H5 file
+    print("loading H5 file")
+
+    tic = time.time()
+    # f = h5py.File('/reg/d/psdm/cxi/cxitut13/res/yoon82/r0010/cxitut13_0010.cxi','r')
+    # f = h5py.File('/reg/d/psdm/cxi/cxitut13/res/yoon82/cxis0813/cxis0813_0032.cxi','r')
+    f = h5py.File('/reg/d/psdm/cxi/cxic0415/scratch/yoon82/psocake/r0099/cxic0415_0099.cxi', 'r')
+    # f = h5py.File('/dev/shm/lipon/cxis0813_0032.cxi','r')
+
+    #imgs = f['/entry_1/data_1/data']
+    numIndex = f['/entry_1/result_1/nPeaksAll'].value
+    #numIndex = numIndex[ numIndex!=-2 ]
+    f.close()
+    toc = time.time()
+    print("Time to read in hdf5: ",toc-tic)
+
+    print(numIndex)
+
+    ds = psana.DataSource('exp=cxic0415:run=99:idx')
+    run = ds.runs().next()
+    times = run.times()
+    numEvents = len(times)
+    env = ds.env()
+    eventNumber = 0
+    evt = run.event(times[eventNumber])
+    det = psana.Detector('DscCsPad')
+    tic = time.time()
+    img = prepoces(eventNumber)
+    imgShape = img.shape
+    toc = time.time()
+    print("Time for preprocessing per image: ",toc-tic)
+    #plt.imshow(img)
+    #plt.show()
+
+    # Generate train/test list from quartile
+    lowerB = np.percentile(numIndex,q=25)
+    higherB = np.percentile(numIndex,q=75)
+    print("lower,higher bounds: ", lowerB, higherB)
+
+    missInd = np.where(numIndex<=lowerB)[0]
+    hitInd = np.where(numIndex>=higherB)[0]
+    print("number of misses, hits: ", len(missInd), len(hitInd))
+
+    # Split into training / testing sets
+    testSize = 50
+    # TODO: add assert 50
+    missInd_test = missInd[-testSize:]
+    hitInd_test = hitInd[-testSize:]
+    missInd_train = missInd[:len(missInd)-testSize]
+    hitInd_train = hitInd[:len(hitInd)-testSize]
+
+    trainSize = len(missInd_train) + len(hitInd_train)
+    testSize = 2 * testSize
+    print("Available train and test images: ", trainSize, testSize)
+
+
+
 
 # prepare testing set
 counter_missTest = 0
