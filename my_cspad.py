@@ -50,7 +50,7 @@ def prepoces(eventNumber):
 thr = 0
 
 numTrain = 100 # TODO: Set to trainSize
-numTest = 100 # TODO: Set to testSize
+numTest = 5 # TODO: Set to testSize
 
 numIters = 1
 nb_classes = 2
@@ -113,11 +113,12 @@ model.summary()
 if useFile:
     import h5py
     exp = 'cxic0415'
-    runNum = 99
+    runNum = 90
     inPath = '/reg/d/psdm/cxi/cxic0415/scratch/yoon82/psocake/'
     outPath = '/reg/d/psdm/cxi/cxitut13/scratch/liponan/'
     detname = 'DscCsPad'
     fname = outPath + exp + '_' + str(runNum).zfill(4) + '.h5'
+    print("loading " +  fname)
     f = h5py.File(fname, 'r')
 else:
     # Load H5 file
@@ -178,6 +179,9 @@ else:
 
 
 
+print(f["/data/missTest"].shape)
+print(f["/data/hitTest"].shape)
+
 # prepare testing set
 counter_missTest = 0
 counter_hitTest = 0
@@ -201,16 +205,27 @@ for u in range(0, numTest):
     # mu = np.mean(img)
     # img = (img-mu) / std
     #################################
-    img_reshape = np.reshape(img, [1, img.shape[0], img.shape[1]])
-    X_test[u, :, :, :] = img_reshape
+    print(img.shape)
+    # img_reshape = np.reshape(img, [1, img.shape[0], img.shape[1]])
+    X_test[u, :, :, :] = img
+
+
+print("size of missTrain: ")
+print(f["/data/missTrain"].shape)
+print("size of hitTrain:  ")
+print(f["/data/hitTrain"].shape)
 
 for t in range(0,numIters):
     counter_miss = 0
     counter_hit = 0
-    # prepare training set
-    for u in range(0, numTrain):
+    if useFile:
+        mInd = np.random.permutation(f["/data/missTrain"].shape[0])
+        hInd = np.random.permutation(f["/data/hitTrain"].shape[0])
+    else:
         mInd = np.random.permutation(len(missInd_train))
         hInd = np.random.permutation(len(hitInd_train))
+    # prepare training set
+    for u in range(0, numTrain):
         if u % 2 == 0:
             if useFile:
                 img = f["/data/missTrain"][mInd[counter_miss],:,:,:]
@@ -230,8 +245,8 @@ for t in range(0,numIters):
         # mu = np.mean(img)
         # img = (img-mu) / std
         #################################
-        img_reshape = np.reshape(img, [1, img.shape[0], img.shape[1]])
-        X_train[u,:,:,:] = img_reshape
+        # img_reshape = np.reshape(img, [1, img.shape[0], img.shape[1]])
+        X_train[u,:,:,:] = img
 
     print(y_train)
     print("% of hit in training set: ", np.sum(y_train)/len(y_train))
