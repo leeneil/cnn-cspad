@@ -49,13 +49,13 @@ def prepoces(eventNumber):
 
 thr = 0
 
-numTrain = 100 # TODO: Set to trainSize
-numTest = 5 # TODO: Set to testSize
+numTrain = 2500 # TODO: Set to trainSize
+numTest = 10 # TODO: Set to testSize
 
 numIters = 1
 nb_classes = 2
-batch_size = 10
-nb_epoch = 1
+batch_size = 100
+nb_epoch = 20
 
 imgShape = np.array([cropB-cropT, cropR-cropL])
 
