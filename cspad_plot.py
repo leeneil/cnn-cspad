@@ -35,12 +35,6 @@ def prepoces(eventNumber):
     calib -= median_filter_ndarr(calib, medianFilterRank)
     # crop
     img = det.image(evt, calib)[cropT:cropB, cropL:cropR]  # crop inside water ring
-    # normalization
-    sig = np.std(img)
-    mu  = np.mean(img)
-    img = img - mu
-    if sig > 0.000000001:
-        img = img / sig
     return img
 
 
@@ -85,7 +79,7 @@ thr = 0
 numIters = 1
 nb_classes = 2
 batch_size = 100
-nb_epoch = 10
+nb_epoch = 1
 learn_rate = 0.002
 
 imgShape = np.array([cropB-cropT, cropR-cropL])
@@ -148,7 +142,7 @@ model.summary()
 if useFile:
     import h5py
     exp = 'cxic0415'
-    runNum = int( sys.argv[1] )
+    runNum = 92 # int( sys.argv[1] )
     inPath = '/reg/d/psdm/cxi/cxic0415/scratch/yoon82/psocake/'
     outPath = '/reg/d/psdm/cxi/cxitut13/scratch/liponan/'
     detname = 'DscCsPad'
@@ -324,4 +318,27 @@ if useFile: f.close()
 
 
 # Visualize weights
+W = model.layers[0].W.get_value(borrow=True)
+W = np.squeeze(W)
+print("W shape : ", W.shape)
 
+pl.figure(figsize=(15, 15))
+pl.title('conv1 weights')
+nice_imshow(pl.gca(), make_mosaic(W, 6, 6), cmap=cm.binary)
+
+inputs = [K.learning_phase()] + model.inputs
+
+_convout1_f = K.function(inputs, [convout1.output])
+def convout1_f(X):
+    # The [0] is to disable the training phase flag
+    return _convout1_f([0] + [X])
+
+
+# Visualize convolution result (after activation)
+C1 = convout1_f(X)
+C1 = np.squeeze(C1)
+print("C1 shape : ", C1.shape)
+
+pl.figure(figsize=(15, 15))
+pl.suptitle('convout1')
+nice_imshow(pl.gca(), make_mosaic(C1, 6, 6), cmap=cm.binary)
