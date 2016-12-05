@@ -49,20 +49,21 @@ def prepoces(eventNumber):
 
 thr = 0
 
-numTrain = 2500 # TODO: Set to trainSize
-numTest = 10 # TODO: Set to testSize
+# numTrain = 2400 # TODO: Set to trainSize
+# numTest = 10 # TODO: Set to testSize
 
 numIters = 1
 nb_classes = 2
 batch_size = 100
-nb_epoch = 20
+nb_epoch = 10
+learn_rate = 0.002
 
 imgShape = np.array([cropB-cropT, cropR-cropL])
 
-X_train = np.empty((numTrain, 1, imgShape[0], imgShape[1]))
-X_test = np.empty((numTest, 1, imgShape[0], imgShape[1]))
-y_train = np.empty((numTrain,),dtype=int)
-y_test = np.empty((numTest,),dtype=int)
+# X_train = np.empty((numTrain, 1, imgShape[0], imgShape[1]))
+# X_test = np.empty((numTest, 1, imgShape[0], imgShape[1]))
+# y_train = np.empty((numTrain,),dtype=int)
+# y_test = np.empty((numTest,),dtype=int)
 
 #########################################
 from keras.utils import np_utils
@@ -70,15 +71,19 @@ from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation, Flatten
 from keras.layers.convolutional import Convolution2D, MaxPooling2D
 from keras.layers.normalization import BatchNormalization
+from keras.optimizers import SGD
 import theano
 print(theano.config.device)
 
 # build KERAS model
 print("building CNN model")
 
+
+x_train = np.empty((1, 1, imgShape[0], imgShape[1]))
+
 model = Sequential()
 
-model.add(Convolution2D(4, 5, 5, border_mode='valid', input_shape=X_train.shape[1:]))
+model.add(Convolution2D(4, 7, 7, border_mode='valid', input_shape=x_train.shape[1:]))
 # The Dropout is not in the original keras example, it's just here to demonstrate how to
 # correctly handle train/predict phase difference when visualizing convolutions below
 model.add(Dropout(0.1))
@@ -89,7 +94,7 @@ convout1 = Activation('relu')
 model.add(convout1)
 
 model.add(MaxPooling2D(pool_size=(5, 5)))
-model.add(Convolution2D(4, 5, 5))
+model.add(Convolution2D(4, 7, 7))
 model.add(BatchNormalization(mode=0))
 convout2 = Activation('relu')
 model.add(convout2)
@@ -104,8 +109,8 @@ model.add(Dropout(0.5))
 
 model.add(Dense(nb_classes))
 model.add(Activation('relu'))
-
-model.compile(loss='binary_crossentropy', optimizer='adadelta', metrics=['accuracy'])
+sgd = SGD(lr=learn_rate, momentum=0.9, decay=0.0001)
+model.compile(loss='binary_crossentropy', optimizer=sgd, metrics=['accuracy'])
 
 model.summary()
 #################################################
@@ -113,7 +118,7 @@ model.summary()
 if useFile:
     import h5py
     exp = 'cxic0415'
-    runNum = 90
+    runNum = 92
     inPath = '/reg/d/psdm/cxi/cxic0415/scratch/yoon82/psocake/'
     outPath = '/reg/d/psdm/cxi/cxitut13/scratch/liponan/'
     detname = 'DscCsPad'
@@ -177,10 +182,23 @@ else:
     print("Available train and test images: ", trainSize, testSize)
 
 
-
-
 print(f["/data/missTest"].shape)
 print(f["/data/hitTest"].shape)
+
+
+numTrain = 2*np.minimum( f["/data/missTrain"].shape[0], f["/data/hitTrain"].shape[0] ) # TODO: Set to trainSize
+numTest = f["/data/missTest"].shape[0] + f["/data/hitTest"].shape[0] # TODO: Set to testSize
+
+print("Training data size: ", numTrain)
+print("Testing data size:  ", numTest)
+
+
+X_train = np.empty((numTrain, 1, imgShape[0], imgShape[1]))
+X_test = np.empty((numTest, 1, imgShape[0], imgShape[1]))
+y_train = np.empty((numTrain,),dtype=int)
+y_test = np.empty((numTest,),dtype=int)
+
+
 
 # prepare testing set
 counter_missTest = 0
