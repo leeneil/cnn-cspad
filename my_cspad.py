@@ -118,7 +118,7 @@ model.summary()
 if useFile:
     import h5py
     exp = 'cxic0415'
-    runNum = 92
+    runNum = int( sys.argv[1] )
     inPath = '/reg/d/psdm/cxi/cxic0415/scratch/yoon82/psocake/'
     outPath = '/reg/d/psdm/cxi/cxitut13/scratch/liponan/'
     detname = 'DscCsPad'
