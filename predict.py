@@ -340,7 +340,7 @@ model.load_weights(filename)
 
 Y_predict = model.predict(X_val, batch_size=100, verbose=1)
 print("Prediction result")
-confu_matrix(y_val, Y_val)
+confu_matrix(y_val, Y_predict)
 
 
 if useFile: f.close()
