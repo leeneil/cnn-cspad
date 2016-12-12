@@ -44,6 +44,36 @@ def prepoces(eventNumber):
     return img
 
 
+def confu_matrix(y_label, Y_predict):
+    y_predict = np.argmax(Y_predict, axis=1)
+    n_tp = np.sum( y_label * y_predict )
+    n_fp = np.sum( (1-y_label) * y_predict )
+    n_fn = np.sum( y_label * (1-y_predict) )
+    n_tn = np.sum( (1-y_label) * (1-y_predict) )
+    
+    n = y_label.shape[0]
+    
+    p_tp = 1.0 * n_tp / n
+    p_fp = 1.0 * n_fp / n
+    p_fn = 1.0 * n_fn / n
+    p_tn = 1.0 * n_tn / n
+
+    print("\t    label ")
+    print("\\\tT\t\tF\t")
+    print("T\t" + str(p_tp) + "\t" + str(p_fp))
+    print("F\t" + str(p_fn) + "\t" + str(p_tn))
+    
+    print(y_label)
+    print(y_predict)
+
+    return (p_tp, p_fp, p_fn, p_tn)
+
+
+
+
+
+
+
 import numpy.ma as ma
 def make_mosaic(imgs, nrows, ncols, border=1):
     """
@@ -85,8 +115,8 @@ thr = 0
 numIters = 1
 nb_classes = 2
 batch_size = 100
-nb_epoch = 10
-learn_rate = 0.002
+nb_epoch = 5
+learn_rate = 0.001  # 0.002
 
 imgShape = np.array([cropB-cropT, cropR-cropL])
 
@@ -113,6 +143,7 @@ x_train = np.empty((1, 1, imgShape[0], imgShape[1]))
 
 model = Sequential()
 
+# model.add(BatchNormalization(mode=0, input_shape=x_train.shape[1:]))
 model.add(Convolution2D(4, 7, 7, border_mode='valid', input_shape=x_train.shape[1:]))
 # The Dropout is not in the original keras example, it's just here to demonstrate how to
 # correctly handle train/predict phase difference when visualizing convolutions below
@@ -125,7 +156,7 @@ model.add(convout1)
 
 model.add(MaxPooling2D(pool_size=(5, 5)))
 model.add(Convolution2D(4, 7, 7))
-model.add(BatchNormalization(mode=0))
+model.add(BatchNormalization(mode=1))
 convout2 = Activation('relu')
 model.add(convout2)
 model.add(MaxPooling2D(pool_size=(5, 5)))
@@ -216,7 +247,10 @@ print(f["/data/missTest"].shape)
 print(f["/data/hitTest"].shape)
 
 
-numTrain = 2*np.minimum( f["/data/missTrain"].shape[0], f["/data/hitTrain"].shape[0] ) # TODO: Set to trainSize
+if len(sys.argv) > 2:
+    numTrain = int(sys.argv[2])
+else:
+    numTrain = 2*np.minimum( f["/data/missTrain"].shape[0], f["/data/hitTrain"].shape[0] ) # TODO: Set to trainSize
 numTest = f["/data/missTest"].shape[0] + f["/data/hitTest"].shape[0] # TODO: Set to testSize
 
 print("Training data size: ", numTrain)
@@ -249,11 +283,11 @@ for u in range(0, numTest):
         y_test[u] = 1
         counter_hitTest += 1
     ### sample-wise normalization ###
-    # std = np.std(img)
-    # mu = np.mean(img)
-    # img = (img-mu) / std
+    #std = np.std(img)
+    #mu = np.mean(img)
+    #img = (img-mu) / std
     #################################
-    print(img.shape)
+    # print(img.shape)
     # img_reshape = np.reshape(img, [1, img.shape[0], img.shape[1]])
     X_test[u, :, :, :] = img
 
@@ -296,23 +330,36 @@ for t in range(0,numIters):
         # img_reshape = np.reshape(img, [1, img.shape[0], img.shape[1]])
         X_train[u,:,:,:] = img
 
-    print(y_train)
-    print("% of hit in training set: ", np.sum(y_train)/len(y_train))
+    #print(y_train)
+    print("% of hit in training set: ", np.sum(y_train)/(len(y_train)*1.0))
 
-    print(y_test)
+    #print(y_test)
     print(np.sum(y_test))
-    print("% of hit in testing set: ", np.sum(y_test)/len(y_test))
+    print("% of hit in testing set: ", np.sum(y_test)/(len(y_test)*1.0))
 
     Y_train = np_utils.to_categorical(y_train, nb_classes)
 
     Y_test = np_utils.to_categorical(y_test, nb_classes)
 
-    output = model.fit(X_train, Y_train, batch_size=batch_size, nb_epoch=nb_epoch, verbose=1, validation_data=(X_test, Y_test))
 
+    if os.path.exists("weights.hdf"):
+        print("loading existing file")
+        model.load_weights("weights.hdf")
+
+    output = model.fit(X_train, Y_train, batch_size=batch_size, nb_epoch=nb_epoch, verbose=1, validation_data=(X_test, Y_test))
+    
+
+    Y_predict = model.predict(X_train, batch_size=100, verbose=1)
+    print("training")
+    confu_matrix(y_train, Y_predict)
+
+    Y_predict = model.predict(X_test, batch_size=100, verbose=1)
+    confu_matrix(y_test, Y_predict)
+    
     print(output)
 
     # WEIGHTS_FNAME = '/reg/d/psdm/cxi/cxitut13/scratch/liponan/ml/cspad_cnn_weights_v1.hdf'
-    # model.save_weights(WEIGHTS_FNAME, overwrite=True)
+    model.save_weights("weights.hdf", overwrite=True)
     # score = model.evaluate(X_test, Y_test, show_accuracy=True, verbose=0)
 
     # print(score)
