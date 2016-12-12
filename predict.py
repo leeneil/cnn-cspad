@@ -324,7 +324,7 @@ for u in range(0, numTrain):
 #print(y_train)
 print("% of hit in validation set: ", np.sum(y_val)/(len(y_val)*1.0))
 
-Y_val = np_utils.to_categorical(y_train, nb_classes)
+Y_val = np_utils.to_categorical(y_val, nb_classes)
 
 
 
